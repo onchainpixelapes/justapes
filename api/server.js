@@ -153,7 +153,7 @@ app.get("/api/x402/scan", (req, res) => {
         scheme: "exact",
         network: "base",
         maxAmountRequired: MINT_PRICE.toString(),
-        resource: "https://justapes.vercel.app/api/mint",
+        resource: "https://justapes.vercel.app/api/x402/scan",
         description: "Mint 1 Just Apes NFT 0.1 USDC",
         mimeType: "application/json",
         payTo: PAY_TO,
@@ -175,3 +175,4 @@ app.get("/api/x402/scan", (req, res) => {
 });
 
 module.exports = app;
+
