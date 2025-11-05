@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 2,
   "builds": [
     {
       "src": "api/**/*.ts",
@@ -15,4 +15,5 @@
       "dest": "/api/$1.ts"
     }
   ]
+
 }
