@@ -1,13 +1,10 @@
 {
   "version": 2,
-  "builds": [
-    { "src": "api/server.js", "use": "@vercel/node" }
-  ],
   "routes": [
-    { "src": "/api/(.*)", "dest": "/api/server.js" }
-  ],
-  "env": {
-    "NODE_ENV": "production"
-  }
+    { "src": "/api/mint", "dest": "/api/mint.js" },
+    { "src": "/api/owner-mint", "dest": "/api/owner-mint.js" },
+    { "src": "/api/payment/verify/(.*)", "dest": "/api/verify.js?txHash=$1" },
+    { "src": "/api/metadata/(.*)", "dest": "/api/metadata.js?tokenId=$1" },
+    { "src": "/api/x402/scan", "dest": "/api/x402scan.js" }
+  ]
 }
-
