@@ -116,4 +116,79 @@ app.get("/api/nft/metadata/:tokenId", (req, res) => {
   });
 });
 
+// ------------------------
+// x402Scan endpoint
+app.get("/api/x402/scan", (req, res) => {
+  res.json({
+    x402Version: 1,
+    accepts: [
+      {
+        scheme: "exact",
+        network: "base",
+        maxAmountRequired: MINT_PRICE.toString(),
+        resource: "/api/purchase",
+        description: "Mint Just Apes NFT",
+        mimeType: "application/json",
+        payTo: PAY_TO,
+        maxTimeoutSeconds: 300,
+        asset: "USDC",
+        outputSchema: {
+          input: {
+            type: "http",
+            method: "POST",
+            bodyType: "json",
+            bodyFields: {
+              to: { type: "string", required: true, description: "Wallet address receiving the NFT" },
+              quantity: { type: "number", required: false, description: "Number of NFTs to mint" }
+            }
+          },
+          output: {
+            success: true,
+            transactionHash: "string",
+            mintedQuantity: "number",
+            tokenIds: ["string"]
+          }
+        }
+      },
+      {
+        scheme: "exact",
+        network: "base",
+        maxAmountRequired: "0",
+        resource: "/api/owner-mint",
+        description: "Owner mint (airdrop) Just Apes NFT",
+        mimeType: "application/json",
+        payTo: PAY_TO,
+        maxTimeoutSeconds: 300,
+        asset: "USDC",
+        outputSchema: {
+          input: {
+            type: "http",
+            method: "POST",
+            bodyType: "json",
+            bodyFields: {
+              to: { type: "string", required: true },
+              quantity: { type: "number", required: true }
+            }
+          },
+          output: {
+            success: true,
+            transactionHash: "string"
+          }
+        }
+      },
+      {
+        scheme: "exact",
+        network: "base",
+        maxAmountRequired: "0",
+        resource: "/api/nft/metadata/:tokenId",
+        description: "Retrieve NFT metadata",
+        mimeType: "application/json",
+        payTo: PAY_TO,
+        maxTimeoutSeconds: 60,
+        asset: "USDC"
+      }
+    ]
+  });
+});
+
 module.exports = app;
