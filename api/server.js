@@ -1,5 +1,8 @@
+// api/index.js veya api/mint.js olarak kaydedebilirsiniz
+
 const express = require("express");
 const { ethers } = require("ethers");
+const serverless = require("serverless-http");
 
 // ------------------------
 // Env değerleri
@@ -28,76 +31,45 @@ const usdcContract = new ethers.Contract(USDC_ADDRESS, erc20Abi, signer);
 const app = express();
 app.use(express.json());
 
-// Disable any response transformations
-app.set('json spaces', 0);
-app.set('json replacer', null);
-
-// Create a standard payment requirement object
-const createPaymentRequirement = () => {
-  return {
-    scheme: "exact",
-    network: "base",
-    maxAmountRequired: MINT_PRICE.toString(),
-    resource: "https://justapes.vercel.app/api/mint",
-    description: "Mint 1 Just Apes NFT 0.1 USDC",
-    mimeType: "application/json",
-    payTo: PAY_TO,
-    maxTimeoutSeconds: 60,
-    asset: USDC_ADDRESS,
-    outputSchema: {
-      input: { type: "http", method: "GET" },
-      output: {
-        x402Version: "number",
-        status: "string",
-        message: "string",
-        txHash: "string"
-      }
-    },
-    extra: { name: "USD Coin", version: "2", symbol: "USDC", decimals: 6 }
-  };
-};
-
-// Create a standard 402 response
-const create402Response = () => {
-  return {
-    x402Version: 1,
-    error: "X-PAYMENT header is required",
-    accepts: [createPaymentRequirement()]
-  };
-};
-
 // ------------------------
 // Mint endpoint
 app.post("/api/mint", async (req, res) => {
   const paymentHeader = req.headers["x-payment"];
   if (!paymentHeader) {
-    // Use manual JSON stringification to avoid any Express transformations
-    res.status(402);
-    res.setHeader('Content-Type', 'application/json');
-    return res.end(JSON.stringify(create402Response()));
+    // Vercel için basitleştirilmiş 402 yanıtı
+    return res.status(402).send({
+      x402Version: 1,
+      error: "X-PAYMENT header is required",
+      accepts: [{
+        scheme: "exact",
+        network: "base",
+        maxAmountRequired: MINT_PRICE.toString(),
+        resource: "https://justapes.vercel.app/api/mint",
+        description: "Mint 1 Just Apes NFT 0.1 USDC",
+        mimeType: "application/json",
+        payTo: PAY_TO,
+        maxTimeoutSeconds: 60,
+        asset: USDC_ADDRESS
+      }]
+    });
   }
 
   const { to, quantity = 1 } = req.body;
 
   try {
     const tx = await nftContract.mint(quantity, { from: to });
-    res.status(200);
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({
+    return res.status(200).send({
       x402Version: 1,
       status: "success",
       message: "NFT minted successfully",
       txHash: tx.hash
-    }));
+    });
   } catch (err) {
-    console.error("Mint error:", err);
-    res.status(500);
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({
+    return res.status(500).send({
       x402Version: 1,
       status: "error",
       message: err.message
-    }));
+    });
   }
 });
 
@@ -108,23 +80,18 @@ app.post("/api/owner-mint", async (req, res) => {
 
   try {
     const tx = await nftContract.ownerMint(to, quantity);
-    res.status(200);
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({
+    return res.status(200).send({
       x402Version: 1,
       status: "success",
       message: "NFT owner-minted successfully",
       txHash: tx.hash
-    }));
+    });
   } catch (err) {
-    console.error("Owner mint error:", err);
-    res.status(500);
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({
+    return res.status(500).send({
       x402Version: 1,
       status: "error",
       message: err.message
-    }));
+    });
   }
 });
 
@@ -133,9 +100,7 @@ app.post("/api/owner-mint", async (req, res) => {
 app.get("/api/payment/verify/:txHash", (req, res) => {
   const { txHash } = req.params;
 
-  res.status(200);
-  res.setHeader('Content-Type', 'application/json');
-  res.end(JSON.stringify({
+  return res.status(200).send({
     x402Version: 1,
     paymentStatus: "confirmed",
     transaction: {
@@ -148,7 +113,7 @@ app.get("/api/payment/verify/:txHash", (req, res) => {
       toAddress: PAY_TO
     },
     nftEligibility: true
-  }));
+  });
 });
 
 // ------------------------
@@ -156,9 +121,7 @@ app.get("/api/payment/verify/:txHash", (req, res) => {
 app.get("/api/metadata/:tokenId", (req, res) => {
   const { tokenId } = req.params;
 
-  res.status(200);
-  res.setHeader('Content-Type', 'application/json');
-  res.end(JSON.stringify({
+  return res.status(200).send({
     tokenId,
     name: `Just Apes #${tokenId}`,
     description: "Exclusive Just Apes NFT",
@@ -168,49 +131,26 @@ app.get("/api/metadata/:tokenId", (req, res) => {
       { trait_type: "Utility Access", value: "Premium" }
     ],
     external_url: "https://justapes.vercel.app"
-  }));
+  });
 });
 
 // ------------------------
-// x402Scan endpoint with manual JSON response
+// x402Scan endpoint - çok basitleştirilmiş
 app.get("/api/x402/scan", (req, res) => {
-  // Use manual JSON stringification to avoid any Express transformations
-  res.status(402);
-  res.setHeader('Content-Type', 'application/json');
-  
-  // Create a very simple response first to test
-  const simpleResponse = {
+  // Vercel için basitleştirilmiş yanıt
+  return res.status(402).send({
     x402Version: 1,
-    error: "X-PAYMENT header is required",
-    accepts: [
-      {
-        scheme: "exact",
-        network: "base",
-        maxAmountRequired: MINT_PRICE.toString(),
-        payTo: PAY_TO,
-        asset: USDC_ADDRESS
-      }
-    ]
-  };
-  
-  return res.end(JSON.stringify(simpleResponse));
+    error: "Payment required",
+    accepts: [{
+      scheme: "exact",
+      network: "base",
+      maxAmountRequired: MINT_PRICE.toString(),
+      payTo: PAY_TO,
+      asset: USDC_ADDRESS
+    }]
+  });
 });
 
-// Environment variable check on startup
-app.listen(process.env.PORT || 3000, () => {
-  console.log("Server started on port", process.env.PORT || 3000);
-  
-  // Verify environment variables are set
-  const requiredEnvVars = ['ADDRESS', 'NFT_CONTRACT', 'USDC_ADDRESS', 'PROVIDER_URL', 'PRIVATE_KEY'];
-  const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
-  
-  if (missingVars.length > 0) {
-    console.error("WARNING: Missing environment variables:", missingVars.join(", "));
-  } else {
-    console.log("All required environment variables are set");
-    console.log("PAY_TO address:", PAY_TO);
-    console.log("USDC address:", USDC_ADDRESS);
-  }
-});
-
+// Vercel için export
 module.exports = app;
+module.exports.handler = serverless(app);
