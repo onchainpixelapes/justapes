@@ -3,7 +3,7 @@ const { ethers } = require("ethers");
 
 // ------------------------
 // Env değerleri
-const ADDRESS = process.env.ADDRESS;
+const PAY_TO = process.env.ADDRESS;
 const NFT_CONTRACT = process.env.NFT_CONTRACT;
 const USDC_ADDRESS = process.env.USDC_ADDRESS;
 const PROVIDER_URL = process.env.PROVIDER_URL;
@@ -28,12 +28,28 @@ const usdcContract = new ethers.Contract(USDC_ADDRESS, erc20Abi, signer);
 const app = express();
 app.use(express.json());
 
+// Add content type header
+app.use((req, res, next) => {
+  res.header("Content-Type", "application/json");
+  next();
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error("Express error:", err);
+  res.status(500).json({
+    x402Version: 1,
+    status: "error",
+    message: "Server error: " + err.message
+  });
+});
+
 // ------------------------
 // Mint endpoint
 app.post("/api/mint", async (req, res) => {
   const paymentHeader = req.headers["x-payment"];
   if (!paymentHeader) {
-    return res.status(402).json({
+    const response = {
       x402Version: 1,
       error: "X-PAYMENT header is required",
       accepts: [
@@ -59,7 +75,9 @@ app.post("/api/mint", async (req, res) => {
           extra: { name: "USD Coin", version: "2", symbol: "USDC", decimals: 6 }
         }
       ]
-    });
+    };
+    console.log("Sending 402 response:", JSON.stringify(response, null, 2));
+    return res.status(402).json(response);
   }
 
   const { to, quantity = 1 } = req.body;
@@ -73,6 +91,7 @@ app.post("/api/mint", async (req, res) => {
       txHash: tx.hash
     });
   } catch (err) {
+    console.error("Mint error:", err);
     res.status(500).json({
       x402Version: 1,
       status: "error",
@@ -95,6 +114,7 @@ app.post("/api/owner-mint", async (req, res) => {
       txHash: tx.hash
     });
   } catch (err) {
+    console.error("Owner mint error:", err);
     res.status(500).json({
       x402Version: 1,
       status: "error",
@@ -143,37 +163,55 @@ app.get("/api/metadata/:tokenId", (req, res) => {
 });
 
 // ------------------------
-// x402Scan endpoint (her zaman 402 JSON)
+// x402Scan endpoint (simplified for debugging)
 app.get("/api/x402/scan", (req, res) => {
-  return res.status(402).json({
+  const response = {
     x402Version: 1,
     error: "X-PAYMENT header is required",
     accepts: [
-  {
-    scheme: "exact",
-    network: "base",
-    maxAmountRequired: MINT_PRICE.toString(),
-    resource: "https://justapes.vercel.app/api/mint",
-    description: "Mint 1 Just Apes NFT 0.1 USDC",
-    mimeType: "application/json",
-    payTo: PAY_TO,
-    maxTimeoutSeconds: 60,
-    asset: USDC_ADDRESS,
-    outputSchema: {
-      input: { type: "http", method: "GET" },
-      output: {
-        x402Version: "number",
-        status: "string",
-        message: "string",
-        txHash: "string"
+      {
+        scheme: "exact",
+        network: "base",
+        maxAmountRequired: MINT_PRICE.toString(),
+        resource: "https://justapes.vercel.app/api/mint",
+        description: "Mint 1 Just Apes NFT 0.1 USDC",
+        mimeType: "application/json",
+        payTo: PAY_TO,
+        maxTimeoutSeconds: 60,
+        asset: USDC_ADDRESS,
+        outputSchema: {
+          input: { type: "http", method: "GET" },
+          output: {
+            x402Version: "number",
+            status: "string",
+            message: "string",
+            txHash: "string"
+          }
+        },
+        extra: { name: "USD Coin", version: "2", symbol: "USDC", decimals: 6 }
       }
-    },
-    extra: { name: "USD Coin", version: "2", symbol: "USDC", decimals: 6 }
+    ]
+  };
+  
+  console.log("Sending x402 scan response:", JSON.stringify(response, null, 2));
+  return res.status(402).json(response);
+});
+
+// Environment variable check on startup
+app.listen(process.env.PORT || 3000, () => {
+  console.log("Server started on port", process.env.PORT || 3000);
+  
+  // Verify environment variables are set
+  const requiredEnvVars = ['ADDRESS', 'NFT_CONTRACT', 'USDC_ADDRESS', 'PROVIDER_URL', 'PRIVATE_KEY'];
+  const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+  
+  if (missingVars.length > 0) {
+    console.error("WARNING: Missing environment variables:", missingVars.join(", "));
+  } else {
+    console.log("All required environment variables are set");
+    console.log("PAY_TO address:", PAY_TO);
+    console.log("USDC address:", USDC_ADDRESS);
   }
-]
-  });
 });
 
 module.exports = app;
-
-
