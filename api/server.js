@@ -3,7 +3,6 @@ const { ethers } = require("ethers");
 
 // ------------------------
 // Env değerleri
-const FACILITATOR_URL = process.env.FACILITATOR_URL;
 const PAY_TO = process.env.ADDRESS;
 const NFT_CONTRACT = process.env.NFT_CONTRACT;
 const USDC_ADDRESS = process.env.USDC_ADDRESS;
@@ -42,13 +41,13 @@ function x402Check(req, res, next) {
         {
           scheme: "exact",
           network: "base",
-          maxAmountRequired: "4000000",
-          resource: "https://www.Punksx402.xyz/api/mint",
-          description: "Mint 1 Punksx402 NFT 4 USDC",
+          maxAmountRequired: MINT_PRICE.toString(),
+          resource: "https://justapes.vercel.app/api/mint",
+          description: "Mint 1 Just Apes NFT 0.1 USDC",
           mimeType: "application/json",
-          payTo: "0x50c400a4e41f6b186b8761cd843afe3452741936",
+          payTo: PAY_TO,
           maxTimeoutSeconds: 60,
-          asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          asset: USDC_ADDRESS,
           outputSchema: {
             input: { type: "http", method: "GET" },
             output: {
@@ -146,50 +145,46 @@ app.get("/api/metadata/:tokenId", (req, res) => {
       { trait_type: "Tier", value: "Citizen" },
       { trait_type: "Utility Access", value: "Premium" }
     ],
-    external_url: "https://yourprojectsite.com"
+    external_url: "https://justapes.vercel.app"
   });
 });
 
 // ------------------------
-// x402Scan endpoint (sabit JSON)
+// x402Scan endpoint
 app.get("/api/x402/scan", (req, res) => {
-  res.json({
-    x402Version: 1,
-    accepts: [
-      {
-        scheme: "exact",
-        network: "base",
-        maxAmountRequired: "4000000",
-        resource: "https://www.Punksx402.xyz/api/mint",
-        description: "Mint 1 Punksx402 NFT 4 USDC",
-        mimeType: "application/json",
-        payTo: "0x50c400a4e41f6b186b8761cd843afe3452741936",
-        maxTimeoutSeconds: 60,
-        asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-        outputSchema: {
-          input: { type: "http", method: "GET" },
-          output: {
-            x402Version: "number",
-            status: "string",
-            message: "string",
-            txHash: "string"
-          }
-        },
-        extra: { name: "USD Coin", version: "2", symbol: "USDC", decimals: 6 }
-      },
-      {
-        scheme: "exact",
-        network: "base",
-        maxAmountRequired: "0",
-        resource: "https://www.Punksx402.xyz/api/metadata/:tokenId",
-        description: "Get NFT metadata",
-        mimeType: "application/json",
-        payTo: "0x50c400a4e41f6b186b8761cd843afe3452741936",
-        maxTimeoutSeconds: 60,
-        asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
-      }
-    ]
-  });
+  const paymentHeader = req.headers["x-payment"];
+
+  if (!paymentHeader) {
+    return res.status(402).json({
+      x402Version: 1,
+      error: "X-PAYMENT header is required",
+      accepts: [
+        {
+          scheme: "exact",
+          network: "base",
+          maxAmountRequired: MINT_PRICE.toString(),
+          resource: "https://justapes.vercel.app/api/mint",
+          description: "Mint 1 Just Apes NFT 0.1 USDC",
+          mimeType: "application/json",
+          payTo: PAY_TO,
+          maxTimeoutSeconds: 60,
+          asset: USDC_ADDRESS,
+          outputSchema: {
+            input: { type: "http", method: "GET" },
+            output: {
+              x402Version: "number",
+              status: "string",
+              message: "string",
+              txHash: "string"
+            }
+          },
+          extra: { name: "USD Coin", version: "2", symbol: "USDC", decimals: 6 }
+        }
+      ]
+    });
+  }
+
+  res.json({ x402Version: 1, message: "X-PAYMENT header provided, endpoint accessible" });
 });
 
 module.exports = app;
