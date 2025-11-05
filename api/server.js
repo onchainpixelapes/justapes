@@ -48,7 +48,7 @@ app.post("/api/mint", async (req, res) => {
           maxTimeoutSeconds: 60,
           asset: USDC_ADDRESS,
           outputSchema: {
-            input: { type: "http", method: "GET" },
+            input: { type: "http", method: "POST" },
             output: {
               x402Version: "number",
               status: "string",
@@ -143,9 +143,9 @@ app.get("/api/metadata/:tokenId", (req, res) => {
 });
 
 // ------------------------
-// x402Scan endpoint (her zaman 402 JSON)
-app.get("/api/x402/scan", (req, res) => {
-  return res.status(402).json({
+// x402Scan endpoint (her zaman 402 JSON) - GET ve POST destekli
+function x402Response() {
+  return {
     x402Version: 1,
     error: "X-PAYMENT header is required",
     accepts: [
@@ -160,7 +160,7 @@ app.get("/api/x402/scan", (req, res) => {
         maxTimeoutSeconds: 60,
         asset: USDC_ADDRESS,
         outputSchema: {
-          input: { type: "http", method: "GET" },
+          input: { type: "http", method: "POST" },
           output: {
             x402Version: "number",
             status: "string",
@@ -171,7 +171,10 @@ app.get("/api/x402/scan", (req, res) => {
         extra: { name: "USD Coin", version: "2", symbol: "USDC", decimals: 6 }
       }
     ]
-  });
-});
+  };
+}
+
+app.get("/api/x402/scan", (req, res) => res.status(402).json(x402Response()));
+app.post("/api/x402/scan", (req, res) => res.status(402).json(x402Response()));
 
 module.exports = app;
