@@ -8,7 +8,7 @@
     "start": "node api/mint.js"
   },
   "engines": {
-    "node": "18.x"
+    "node": "22.x"
   },
   "dependencies": {
     "@coinbase/x402": "0.7.1",
