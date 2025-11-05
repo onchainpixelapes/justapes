@@ -10,7 +10,7 @@ const USDC_ADDRESS = process.env.USDC_ADDRESS;
 const PROVIDER_URL = process.env.PROVIDER_URL;
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
 
-const MINT_PRICE = 100_000; // 0.1 USDC
+const MINT_PRICE = 100000; // 0.1 USDC (6 decimals)
 
 // ------------------------
 // Provider + Signer
@@ -30,7 +30,7 @@ const app = express();
 app.use(express.json());
 
 // ------------------------
-// X402 Payment Check Middleware
+// X402 Payment Middleware (sabit 402 JSON)
 function x402Check(req, res, next) {
   const paymentHeader = req.headers["x-payment"];
 
@@ -42,15 +42,15 @@ function x402Check(req, res, next) {
         {
           scheme: "exact",
           network: "base",
-          maxAmountRequired: MINT_PRICE.toString(),
-          resource: `${req.protocol}://${req.get("host")}${req.originalUrl}`,
-          description: `Mint 1 Just Apes NFT ${MINT_PRICE / 1000000} USDC`,
+          maxAmountRequired: "4000000",
+          resource: "https://www.Punksx402.xyz/api/mint",
+          description: "Mint 1 Punksx402 NFT 4 USDC",
           mimeType: "application/json",
-          payTo: PAY_TO,
-          maxTimeoutSeconds: 300,
-          asset: USDC_ADDRESS,
+          payTo: "0x50c400a4e41f6b186b8761cd843afe3452741936",
+          maxTimeoutSeconds: 60,
+          asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
           outputSchema: {
-            input: { type: "http", method: "POST" },
+            input: { type: "http", method: "GET" },
             output: {
               x402Version: "number",
               status: "string",
@@ -58,12 +58,7 @@ function x402Check(req, res, next) {
               txHash: "string"
             }
           },
-          extra: {
-            name: "USD Coin",
-            version: "2",
-            symbol: "USDC",
-            decimals: 6
-          }
+          extra: { name: "USD Coin", version: "2", symbol: "USDC", decimals: 6 }
         }
       ]
     });
@@ -73,8 +68,8 @@ function x402Check(req, res, next) {
 }
 
 // ------------------------
-// User mint
-app.post("/api/purchase", x402Check, async (req, res) => {
+// Mint endpoint
+app.post("/api/mint", x402Check, async (req, res) => {
   const { to, quantity = 1 } = req.body;
 
   try {
@@ -139,7 +134,7 @@ app.get("/api/payment/verify/:txHash", (req, res) => {
 
 // ------------------------
 // NFT metadata
-app.get("/api/nft/metadata/:tokenId", (req, res) => {
+app.get("/api/metadata/:tokenId", (req, res) => {
   const { tokenId } = req.params;
 
   res.json({
@@ -156,7 +151,7 @@ app.get("/api/nft/metadata/:tokenId", (req, res) => {
 });
 
 // ------------------------
-// x402Scan endpoint
+// x402Scan endpoint (sabit JSON)
 app.get("/api/x402/scan", (req, res) => {
   res.json({
     x402Version: 1,
@@ -164,23 +159,15 @@ app.get("/api/x402/scan", (req, res) => {
       {
         scheme: "exact",
         network: "base",
-        maxAmountRequired: MINT_PRICE.toString(),
-        resource: "/api/purchase",
-        description: "Mint Just Apes NFT",
+        maxAmountRequired: "4000000",
+        resource: "https://www.Punksx402.xyz/api/mint",
+        description: "Mint 1 Punksx402 NFT 4 USDC",
         mimeType: "application/json",
-        payTo: PAY_TO,
-        maxTimeoutSeconds: 300,
-        asset: "USDC",
+        payTo: "0x50c400a4e41f6b186b8761cd843afe3452741936",
+        maxTimeoutSeconds: 60,
+        asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
         outputSchema: {
-          input: {
-            type: "http",
-            method: "POST",
-            bodyType: "json",
-            bodyFields: {
-              to: { type: "string", required: true },
-              quantity: { type: "number", required: false }
-            }
-          },
+          input: { type: "http", method: "GET" },
           output: {
             x402Version: "number",
             status: "string",
@@ -188,34 +175,18 @@ app.get("/api/x402/scan", (req, res) => {
             txHash: "string"
           }
         },
-        extra: {
-          name: "USD Coin",
-          version: "2",
-          symbol: "USDC",
-          decimals: 6
-        }
+        extra: { name: "USD Coin", version: "2", symbol: "USDC", decimals: 6 }
       },
       {
         scheme: "exact",
         network: "base",
         maxAmountRequired: "0",
-        resource: "/api/owner-mint",
-        description: "Owner mint (airdrop) Just Apes NFT",
+        resource: "https://www.Punksx402.xyz/api/metadata/:tokenId",
+        description: "Get NFT metadata",
         mimeType: "application/json",
-        payTo: PAY_TO,
-        maxTimeoutSeconds: 300,
-        asset: "USDC"
-      },
-      {
-        scheme: "exact",
-        network: "base",
-        maxAmountRequired: "0",
-        resource: "/api/nft/metadata/:tokenId",
-        description: "Retrieve NFT metadata",
-        mimeType: "application/json",
-        payTo: PAY_TO,
+        payTo: "0x50c400a4e41f6b186b8761cd843afe3452741936",
         maxTimeoutSeconds: 60,
-        asset: "USDC"
+        asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
       }
     ]
   });
