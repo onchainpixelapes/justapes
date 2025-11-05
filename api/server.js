@@ -14,13 +14,9 @@ app.use((req, res, next) => {
   next();
 });
 
-// x402Scan endpoint - Çok basit format
-app.get("/api/x402/scan", (req, res) => {
-  // Content-Type başlığını açıkça belirtelim
-  res.setHeader('Content-Type', 'application/json');
-  
-  // 402 status kodu ile basit bir JSON yanıtı
-  return res.status(402).json({
+// x402 standardına uygun yanıt
+const createX402Response = () => {
+  return {
     x402Version: 1,
     error: "Payment required",
     accepts: [
@@ -28,32 +24,45 @@ app.get("/api/x402/scan", (req, res) => {
         scheme: "exact",
         network: "base",
         maxAmountRequired: "100000",
+        resource: "https://your-site.vercel.app/api/mint",
+        description: "Mint 1 Just Apes NFT for 0.1 USDC",
+        mimeType: "application/json",
         payTo: process.env.ADDRESS || "0xYourAddressHere",
-        asset: process.env.USDC_ADDRESS || "0xUSDCAddressHere"
+        maxTimeoutSeconds: 60,
+        asset: process.env.USDC_ADDRESS || "0xUSDCAddressHere",
+        outputSchema: {
+          input: { type: "http", method: "POST" },
+          output: {
+            x402Version: "number",
+            status: "string",
+            message: "string",
+            txHash: "string"
+          }
+        },
+        extra: { name: "USD Coin", version: "2", symbol: "USDC", decimals: 6 }
       }
     ]
-  });
+  };
+};
+
+// x402Scan endpoint
+app.get("/api/x402/scan", (req, res) => {
+  // Manuel JSON yanıtı
+  res.status(402);
+  res.setHeader('Content-Type', 'application/json');
+  
+  const response = createX402Response();
+  return res.end(JSON.stringify(response));
 });
 
-// Alternatif x402Scan endpoint - Kök dizinde
+// Alternatif x402Scan endpoint
 app.get("/x402scan", (req, res) => {
-  // Content-Type başlığını açıkça belirtelim
+  // Manuel JSON yanıtı
+  res.status(402);
   res.setHeader('Content-Type', 'application/json');
   
-  // 402 status kodu ile basit bir JSON yanıtı
-  return res.status(402).json({
-    x402Version: 1,
-    error: "Payment required",
-    accepts: [
-      {
-        scheme: "exact",
-        network: "base",
-        maxAmountRequired: "100000",
-        payTo: process.env.ADDRESS || "0xYourAddressHere",
-        asset: process.env.USDC_ADDRESS || "0xUSDCAddressHere"
-      }
-    ]
-  });
+  const response = createX402Response();
+  return res.end(JSON.stringify(response));
 });
 
 // Ana sayfa
