@@ -3,7 +3,7 @@ const { ethers } = require("ethers");
 
 // ------------------------
 // Env değerleri
-const PAY_TO = process.env.ADDRESS;
+const ADDRESS = process.env.ADDRESS;
 const NFT_CONTRACT = process.env.NFT_CONTRACT;
 const USDC_ADDRESS = process.env.USDC_ADDRESS;
 const PROVIDER_URL = process.env.PROVIDER_URL;
@@ -175,4 +175,5 @@ app.get("/api/x402/scan", (req, res) => {
 });
 
 module.exports = app;
+
 
