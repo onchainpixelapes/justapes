@@ -2,7 +2,7 @@ const express = require("express");
 const { ethers } = require("ethers");
 
 // ------------------------
-// Env değerleri (Vercel üzerinden)
+// Env değerleri
 const FACILITATOR_URL = process.env.FACILITATOR_URL;
 const PAY_TO = process.env.ADDRESS;
 const NFT_CONTRACT = process.env.NFT_CONTRACT;
@@ -30,7 +30,7 @@ const app = express();
 app.use(express.json());
 
 // ------------------------
-// x402 Payment Check Middleware
+// X402 Payment Check Middleware
 function x402Check(req, res, next) {
   const paymentHeader = req.headers["x-payment"];
 
@@ -43,7 +43,7 @@ function x402Check(req, res, next) {
           scheme: "exact",
           network: "base",
           maxAmountRequired: MINT_PRICE.toString(),
-          resource: "https://www.yourproject.com/api/purchase",
+          resource: `${req.protocol}://${req.get("host")}${req.originalUrl}`,
           description: `Mint 1 Just Apes NFT ${MINT_PRICE / 1000000} USDC`,
           mimeType: "application/json",
           payTo: PAY_TO,
@@ -177,8 +177,8 @@ app.get("/api/x402/scan", (req, res) => {
             method: "POST",
             bodyType: "json",
             bodyFields: {
-              to: { type: "string", required: true, description: "Wallet address receiving the NFT" },
-              quantity: { type: "number", required: false, description: "Number of NFTs to mint" }
+              to: { type: "string", required: true },
+              quantity: { type: "number", required: false }
             }
           },
           output: {
@@ -204,30 +204,7 @@ app.get("/api/x402/scan", (req, res) => {
         mimeType: "application/json",
         payTo: PAY_TO,
         maxTimeoutSeconds: 300,
-        asset: "USDC",
-        outputSchema: {
-          input: {
-            type: "http",
-            method: "POST",
-            bodyType: "json",
-            bodyFields: {
-              to: { type: "string", required: true },
-              quantity: { type: "number", required: true }
-            }
-          },
-          output: {
-            x402Version: "number",
-            status: "string",
-            message: "string",
-            txHash: "string"
-          }
-        },
-        extra: {
-          name: "USD Coin",
-          version: "2",
-          symbol: "USDC",
-          decimals: 6
-        }
+        asset: "USDC"
       },
       {
         scheme: "exact",
