@@ -35,7 +35,9 @@ const nft = new ethers.Contract(NFT_CONTRACT, ERC721_ABI, wallet);
 
 const x402Version = 1;
 
+// ------------------------
 // Payment requirement
+// ------------------------
 function createExactPaymentRequirements(price: Price, network: string, resource: Resource): PaymentRequirements {
   const atomicAmount = processPriceToAtomicAmount(price, network);
   if ("error" in atomicAmount) throw new Error(atomicAmount.error);
@@ -56,7 +58,9 @@ function createExactPaymentRequirements(price: Price, network: string, resource:
   };
 }
 
+// ------------------------
 // Verify payment
+// ------------------------
 async function verifyPayment(req: express.Request, res: express.Response, paymentRequirements: PaymentRequirements[]) {
   const payment = req.header("X-PAYMENT");
   if (!payment) {
@@ -89,11 +93,13 @@ async function verifyPayment(req: express.Request, res: express.Response, paymen
 }
 
 // -----------------
-// Mint Endpoint
+// /mint Endpoint
 // -----------------
 app.post("/mint", async (req, res) => {
   try {
     const quantity = parseInt(req.body.quantity ?? "1");
+    if (quantity < 1) throw new Error("Quantity must be at least 1");
+
     const resource = `${req.protocol}://${req.headers.host}${req.originalUrl}` as Resource;
 
     const paymentRequirements = [
@@ -104,20 +110,26 @@ app.post("/mint", async (req, res) => {
       ),
     ];
 
+    console.log("Verifying payment...");
     const isValid = await verifyPayment(req, res, paymentRequirements);
     if (!isValid) return;
+    console.log("Payment verified.");
 
+    console.log("Settling payment...");
     const decoded = exact.evm.decodePayment(req.header("X-PAYMENT")!);
     const settleResponse = await settle(decoded, paymentRequirements[0]);
     res.setHeader("X-PAYMENT-RESPONSE", settleResponseHeader(settleResponse));
+    console.log("Payment settled.");
 
+    console.log(`Minting ${quantity} NFT(s)...`);
     const tx = await nft.mint(quantity);
     const receipt = await tx.wait();
+    console.log("NFT minted, txHash:", receipt.transactionHash);
 
     res.status(200).json({ success: true, txHash: receipt.transactionHash, quantity });
   } catch (err: any) {
-    console.error("Mint error:", err);
-    res.status(500).json({ error: err.message ?? "Mint failed" });
+    console.error("Mint endpoint error:", err);
+    res.status(500).json({ error: err.message ?? "Internal Server Error" });
   }
 });
 
