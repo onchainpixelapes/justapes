@@ -1,25 +1,19 @@
 {
-  "name": "x402scan-nft-mint",
+  "name": "nft-mint-api",
   "version": "1.0.0",
-  "private": true,
+  "description": "NFT mint endpoint with x402 and USDC on Base",
   "type": "module",
   "scripts": {
     "dev": "vercel dev",
-    "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node api/mint.js"
+  },
+  "engines": {
+    "node": "18.x"
   },
   "dependencies": {
-    "dotenv": "^16.3.1",
-    "ethers": "^6.9.0",
-    "express": "^4.18.2",
-    "@coinbase/x402": "^0.7.1"
-  },
-  "devDependencies": {
-    "@types/express": "^4.17.17",
-    "typescript": "^5.3.0",
-    "@vercel/node": "^5.5.4"
+    "@coinbase/x402": "0.7.1",
+    "dotenv": "^16.1.4",
+    "ethers": "^6.8.0",
+    "express": "^4.18.2"
   }
 }
-
-
-
