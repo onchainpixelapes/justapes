@@ -1,8 +1,5 @@
-// api/index.js veya api/mint.js olarak kaydedebilirsiniz
-
 const express = require("express");
 const { ethers } = require("ethers");
-const serverless = require("serverless-http");
 
 // ------------------------
 // Env değerleri
@@ -36,21 +33,32 @@ app.use(express.json());
 app.post("/api/mint", async (req, res) => {
   const paymentHeader = req.headers["x-payment"];
   if (!paymentHeader) {
-    // Vercel için basitleştirilmiş 402 yanıtı
-    return res.status(402).send({
+    return res.status(402).json({
       x402Version: 1,
       error: "X-PAYMENT header is required",
-      accepts: [{
-        scheme: "exact",
-        network: "base",
-        maxAmountRequired: MINT_PRICE.toString(),
-        resource: "https://justapes.vercel.app/api/mint",
-        description: "Mint 1 Just Apes NFT 0.1 USDC",
-        mimeType: "application/json",
-        payTo: PAY_TO,
-        maxTimeoutSeconds: 60,
-        asset: USDC_ADDRESS
-      }]
+      accepts: [
+        {
+          scheme: "exact",
+          network: "base",
+          maxAmountRequired: MINT_PRICE.toString(),
+          resource: "https://justapes.vercel.app/api/mint",
+          description: "Mint 1 Just Apes NFT 0.1 USDC",
+          mimeType: "application/json",
+          payTo: PAY_TO,
+          maxTimeoutSeconds: 60,
+          asset: USDC_ADDRESS,
+          outputSchema: {
+            input: { type: "http", method: "GET" },
+            output: {
+              x402Version: "number",
+              status: "string",
+              message: "string",
+              txHash: "string"
+            }
+          },
+          extra: { name: "USD Coin", version: "2", symbol: "USDC", decimals: 6 }
+        }
+      ]
     });
   }
 
@@ -58,14 +66,14 @@ app.post("/api/mint", async (req, res) => {
 
   try {
     const tx = await nftContract.mint(quantity, { from: to });
-    return res.status(200).send({
+    res.json({
       x402Version: 1,
       status: "success",
       message: "NFT minted successfully",
       txHash: tx.hash
     });
   } catch (err) {
-    return res.status(500).send({
+    res.status(500).json({
       x402Version: 1,
       status: "error",
       message: err.message
@@ -80,14 +88,14 @@ app.post("/api/owner-mint", async (req, res) => {
 
   try {
     const tx = await nftContract.ownerMint(to, quantity);
-    return res.status(200).send({
+    res.json({
       x402Version: 1,
       status: "success",
       message: "NFT owner-minted successfully",
       txHash: tx.hash
     });
   } catch (err) {
-    return res.status(500).send({
+    res.status(500).json({
       x402Version: 1,
       status: "error",
       message: err.message
@@ -100,7 +108,7 @@ app.post("/api/owner-mint", async (req, res) => {
 app.get("/api/payment/verify/:txHash", (req, res) => {
   const { txHash } = req.params;
 
-  return res.status(200).send({
+  res.json({
     x402Version: 1,
     paymentStatus: "confirmed",
     transaction: {
@@ -121,7 +129,7 @@ app.get("/api/payment/verify/:txHash", (req, res) => {
 app.get("/api/metadata/:tokenId", (req, res) => {
   const { tokenId } = req.params;
 
-  return res.status(200).send({
+  res.json({
     tokenId,
     name: `Just Apes #${tokenId}`,
     description: "Exclusive Just Apes NFT",
@@ -135,22 +143,35 @@ app.get("/api/metadata/:tokenId", (req, res) => {
 });
 
 // ------------------------
-// x402Scan endpoint - çok basitleştirilmiş
+// x402Scan endpoint (her zaman 402 JSON)
 app.get("/api/x402/scan", (req, res) => {
-  // Vercel için basitleştirilmiş yanıt
-  return res.status(402).send({
+  return res.status(402).json({
     x402Version: 1,
-    error: "Payment required",
-    accepts: [{
-      scheme: "exact",
-      network: "base",
-      maxAmountRequired: MINT_PRICE.toString(),
-      payTo: PAY_TO,
-      asset: USDC_ADDRESS
-    }]
+    error: "X-PAYMENT header is required",
+    accepts: [
+      {
+        scheme: "exact",
+        network: "base",
+        maxAmountRequired: MINT_PRICE.toString(),
+        resource: "https://justapes.vercel.app/api/mint",
+        description: "Mint 1 Just Apes NFT 0.1 USDC",
+        mimeType: "application/json",
+        payTo: PAY_TO,
+        maxTimeoutSeconds: 60,
+        asset: USDC_ADDRESS,
+        outputSchema: {
+          input: { type: "http", method: "GET" },
+          output: {
+            x402Version: "number",
+            status: "string",
+            message: "string",
+            txHash: "string"
+          }
+        },
+        extra: { name: "USD Coin", version: "2", symbol: "USDC", decimals: 6 }
+      }
+    ]
   });
 });
 
-// Vercel için export
 module.exports = app;
-module.exports.handler = serverless(app);
