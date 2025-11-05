@@ -2,16 +2,6 @@ const express = require("express");
 const { ethers } = require("ethers");
 
 // ------------------------
-// x402 mock middleware
-// ------------------------
-function paymentMiddleware(payTo, routes, options) {
-  return (req, res, next) => {
-    console.log("x402 mock middleware hit:", req.path);
-    next();
-  };
-}
-
-// ------------------------
 // Env değerleri (Vercel üzerinden)
 const FACILITATOR_URL = process.env.FACILITATOR_URL;
 const PAY_TO = process.env.ADDRESS;
@@ -39,44 +29,90 @@ const usdcContract = new ethers.Contract(USDC_ADDRESS, erc20Abi, signer);
 const app = express();
 app.use(express.json());
 
-// x402 mock middleware
-app.use(paymentMiddleware(PAY_TO, {}, { url: FACILITATOR_URL }));
+// ------------------------
+// x402 Payment Check Middleware
+function x402Check(req, res, next) {
+  const paymentHeader = req.headers["x-payment"];
+
+  if (!paymentHeader) {
+    return res.status(402).json({
+      x402Version: 1,
+      error: "X-PAYMENT header is required",
+      accepts: [
+        {
+          scheme: "exact",
+          network: "base",
+          maxAmountRequired: MINT_PRICE.toString(),
+          resource: "https://www.yourproject.com/api/purchase",
+          description: `Mint 1 Just Apes NFT ${MINT_PRICE / 1000000} USDC`,
+          mimeType: "application/json",
+          payTo: PAY_TO,
+          maxTimeoutSeconds: 300,
+          asset: USDC_ADDRESS,
+          outputSchema: {
+            input: { type: "http", method: "POST" },
+            output: {
+              x402Version: "number",
+              status: "string",
+              message: "string",
+              txHash: "string"
+            }
+          },
+          extra: {
+            name: "USD Coin",
+            version: "2",
+            symbol: "USDC",
+            decimals: 6
+          }
+        }
+      ]
+    });
+  }
+
+  next();
+}
 
 // ------------------------
 // User mint
-app.post("/api/purchase", async (req, res) => {
+app.post("/api/purchase", x402Check, async (req, res) => {
+  const { to, quantity = 1 } = req.body;
+
   try {
-    const { to, quantity = 1 } = req.body;
-
-    const totalPrice = MINT_PRICE * quantity;
-    console.log(`Mint request: to=${to}, quantity=${quantity}, totalPrice=${totalPrice}`);
-
     const tx = await nftContract.mint(quantity, { from: to });
     res.json({
-      success: true,
-      transactionHash: tx.hash,
-      mintedQuantity: quantity,
-      tokenIds: Array.from({ length: quantity }, (_, i) => i + 1)
+      x402Version: 1,
+      status: "success",
+      message: "NFT minted successfully",
+      txHash: tx.hash
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({
+      x402Version: 1,
+      status: "error",
+      message: err.message
+    });
   }
 });
 
 // ------------------------
 // Owner mint (airdrop)
 app.post("/api/owner-mint", async (req, res) => {
+  const { to, quantity = 1 } = req.body;
+
   try {
-    const { to, quantity = 1 } = req.body;
     const tx = await nftContract.ownerMint(to, quantity);
     res.json({
-      success: true,
-      transactionHash: tx.hash
+      x402Version: 1,
+      status: "success",
+      message: "NFT owner-minted successfully",
+      txHash: tx.hash
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({
+      x402Version: 1,
+      status: "error",
+      message: err.message
+    });
   }
 });
 
@@ -84,7 +120,9 @@ app.post("/api/owner-mint", async (req, res) => {
 // Payment verification (mock)
 app.get("/api/payment/verify/:txHash", (req, res) => {
   const { txHash } = req.params;
+
   res.json({
+    x402Version: 1,
     paymentStatus: "confirmed",
     transaction: {
       hash: txHash,
@@ -103,6 +141,7 @@ app.get("/api/payment/verify/:txHash", (req, res) => {
 // NFT metadata
 app.get("/api/nft/metadata/:tokenId", (req, res) => {
   const { tokenId } = req.params;
+
   res.json({
     tokenId,
     name: `Just Apes #${tokenId}`,
@@ -143,11 +182,17 @@ app.get("/api/x402/scan", (req, res) => {
             }
           },
           output: {
-            success: true,
-            transactionHash: "string",
-            mintedQuantity: "number",
-            tokenIds: ["string"]
+            x402Version: "number",
+            status: "string",
+            message: "string",
+            txHash: "string"
           }
+        },
+        extra: {
+          name: "USD Coin",
+          version: "2",
+          symbol: "USDC",
+          decimals: 6
         }
       },
       {
@@ -171,9 +216,17 @@ app.get("/api/x402/scan", (req, res) => {
             }
           },
           output: {
-            success: true,
-            transactionHash: "string"
+            x402Version: "number",
+            status: "string",
+            message: "string",
+            txHash: "string"
           }
+        },
+        extra: {
+          name: "USD Coin",
+          version: "2",
+          symbol: "USDC",
+          decimals: 6
         }
       },
       {
