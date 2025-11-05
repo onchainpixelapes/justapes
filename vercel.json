@@ -1,3 +1,4 @@
+{
   "version": 2,
   "routes": [
     { "src": "/api/x402/scan", "dest": "/api/x402scan" },
