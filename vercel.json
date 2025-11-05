@@ -4,6 +4,7 @@
     { "src": "api/server.js", "use": "@vercel/node" }
   ],
   "routes": [
+    { "src": "/x402scan", "dest": "/api/server.js" },
     { "src": "/api/(.*)", "dest": "/api/server.js" }
   ]
 }
