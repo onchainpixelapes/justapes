@@ -149,29 +149,30 @@ app.get("/api/x402/scan", (req, res) => {
     x402Version: 1,
     error: "X-PAYMENT header is required",
     accepts: [
-      {
-        scheme: "exact",
-        network: "base",
-        maxAmountRequired: MINT_PRICE.toString(),
-        resource: "https://justapes.vercel.app/api/mint",
-        description: "Mint 1 Just Apes NFT 0.1 USDC",
-        mimeType: "application/json",
-        payTo: PAY_TO,
-        maxTimeoutSeconds: 60,
-        asset: USDC_ADDRESS,
-        outputSchema: {
-          input: { type: "http", method: "GET" },
-          output: {
-            x402Version: "number",
-            status: "string",
-            message: "string",
-            txHash: "string"
-          }
-        },
-        extra: { name: "USD Coin", version: "2", symbol: "USDC", decimals: 6 }
+  {
+    scheme: "exact",
+    network: "base",
+    maxAmountRequired: MINT_PRICE.toString(),
+    resource: "https://justapes.vercel.app/api/mint",
+    description: "Mint 1 Just Apes NFT 0.1 USDC",
+    mimeType: "application/json",
+    payTo: PAY_TO,
+    maxTimeoutSeconds: 60,
+    asset: USDC_ADDRESS,
+    outputSchema: {
+      input: { type: "http", method: "GET" },
+      output: {
+        x402Version: "number",
+        status: "string",
+        message: "string",
+        txHash: "string"
       }
-    ]
+    },
+    extra: { name: "USD Coin", version: "2", symbol: "USDC", decimals: 6 }
+  }
+]
   });
 });
 
 module.exports = app;
+
