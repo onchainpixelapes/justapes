@@ -45,6 +45,17 @@ const createX402Response = () => {
   };
 };
 
+// Ana sayfa - Kök dizin
+app.get("/", (req, res) => {
+  return res.json({
+    message: "API is running",
+    endpoints: {
+      x402scan: "/api/x402/scan",
+      alternativeX402scan: "/x402scan"
+    }
+  });
+});
+
 // x402Scan endpoint
 app.get("/api/x402/scan", (req, res) => {
   // Manuel JSON yanıtı
@@ -65,22 +76,12 @@ app.get("/x402scan", (req, res) => {
   return res.end(JSON.stringify(response));
 });
 
-// Ana sayfa
-app.get("/", (req, res) => {
-  return res.json({
-    message: "API is running",
-    endpoints: {
-      x402scan: "/api/x402/scan",
-      alternativeX402scan: "/x402scan"
-    }
-  });
-});
-
-// Catch-all route
+// Catch-all route - En sona koyun
 app.use("*", (req, res) => {
   return res.status(404).json({
     error: "Not Found",
-    message: `The requested endpoint ${req.path} does not exist.`
+    message: `The requested endpoint ${req.originalUrl || req.url} does not exist.`,
+    availableEndpoints: ["/", "/api/x402/scan", "/x402scan"]
   });
 });
 
